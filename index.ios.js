@@ -28,8 +28,35 @@ class Two extends React.Component {
   } 
 }
 
+/*
+  The list view of jobs you have applied
+*/
+
 class Main extends React.Component {
-   
+
+  constructor(props) {
+    super(props);
+    var testData = [{"company":"Google","date":"2015-08-07"},
+                    {"company":"Facebook","date":"2015-08-07"},
+                    {"company":"Airbnb","date":"2015-08-07"},
+                    {"company":"Linkedin","date":"2015-08-07"},{"company":"Google","date":"2015-08-07"},
+                    {"company":"Facebook","date":"2015-08-07"},
+                    {"company":"Airbnb","date":"2015-08-07"},
+                    {"company":"Linkedin","date":"2015-08-07"},{"company":"Google","date":"2015-08-07"},
+                    {"company":"Facebook","date":"2015-08-07"},
+                    {"company":"Airbnb","date":"2015-08-07"},
+                    {"company":"Linkedin","date":"2015-08-07"}];
+    var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}); 
+    this.state = {
+      dataSource: ds.cloneWithRows(testData),
+    };
+  }
+
+  // componentDidMount() {
+  //   var listViewScrollView = this.refs.listView.getScrollResponder();
+  //   listViewScrollView.scrollTo({y: 1}); // Hack to get ListView to render fully
+  // }
+
   onPress() {
     alert("YO FROM RIGHT BUTTON");
   }
@@ -44,15 +71,21 @@ class Main extends React.Component {
       rightText: 'ALERT!'
     })
   }
+
+  renderRow(rowData) {
+    return <Text>Hello World</Text>
+  }
   
   render() {
-    return(
-      <View style={ styles.mainContainer }>
-        <TouchableHighlight style={ styles.button } onPress={ () => this.gotoNext() }>
-          <Text style={ styles.buttonText }>Go to next page</Text>
-        </TouchableHighlight>
-      </View> 
-    )
+    return (
+      <View style={styles.mainContainer}>
+        <ListView
+          ref="listView"
+          dataSource={this.state.dataSource}
+          renderRow={() => this.renderRow()}
+        />
+      </View>
+    );
   }
 }
 
@@ -142,6 +175,7 @@ class jobmanager extends React.Component {
       passProps: {
         name: "Houliang"
       },
+      titleText: 'New Application',
       leftText: 'Cancel',
       type: 'Modal'
     });
@@ -191,7 +225,7 @@ var NavigationBarRouteMapper = {
                               </TouchableHighlight> )
   },
   Title(route, navigator, index, navState) {
-    return <Text style={ styles.title }>Job Applications</Text>
+    return <Text style={ styles.title }>{ route.titleText || 'Job Application' }</Text>
   }
 };
 
@@ -206,7 +240,7 @@ var styles = StyleSheet.create({
   mainContainer: {
     flex: 4, 
     flexDirection: 'column', 
-    marginTop:100
+    marginTop:65
   },
   leftNavButtonText: {
     fontSize: 18,
