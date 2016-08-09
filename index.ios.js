@@ -13,20 +13,16 @@ import {
   TouchableWithoutFeedback
 } from 'react-native';
 
-var t = require('tcomb-form-native');
+const t = require('tcomb-form-native');
 t.form.Form.stylesheet = require('tcomb-form-native/lib/stylesheets/bootstrap');
-var Form = t.form.Form;
-///////////////////////////////////////
-class Two extends React.Component {
-    render(){
-      return(
-        <View style={{marginTop:100}}>
-          <Text style={{fontSize:20}}>Hello From second component</Text>
-          <Text>id: {this.props.id}</Text>
-        </View>
-    )
-  } 
-}
+const Form = t.form.Form;
+const database = require('./db');
+const realm = database.realm;
+const schema = database.schema;
+const dbAndFormMap = {
+  string: 'String',
+  date: 'Date'
+};
 
 /*
   The list view of jobs you have applied
@@ -36,26 +32,32 @@ class Main extends React.Component {
 
   constructor(props) {
     super(props);
-    var testData = [{"company":"Google","date":"2015-08-07"},
-                    {"company":"Facebook","date":"2015-08-07"},
-                    {"company":"Airbnb","date":"2015-08-07"},
-                    {"company":"Linkedin","date":"2015-08-07"},{"company":"Google","date":"2015-08-07"},
-                    {"company":"Facebook","date":"2015-08-07"},
-                    {"company":"Airbnb","date":"2015-08-07"},
-                    {"company":"Linkedin","date":"2015-08-07"},{"company":"Google","date":"2015-08-07"},
-                    {"company":"Facebook","date":"2015-08-07"},
-                    {"company":"Airbnb","date":"2015-08-07"},
-                    {"company":"Linkedin","date":"2015-08-07"}];
+    this.loadListView();
+  }
+
+  componentWillUpdate() {
+    this.loadListView();
+  }
+
+  loadListView() {
+    var jobs = realm.objects('JobApp');
+    console.log("job app number: " + jobs.length);
+    var jobsList = [];
+    for (let i = 0;i < jobs.length;i++) {
+      let job = jobs[i];
+      console.log(job.company);
+      jobsList.push({
+        company: job.company,
+        date: job.date,
+        position: job.position
+      });
+    }
+    var testData = jobsList;
     var ds = new ListView.DataSource({rowHasChanged: (r1, r2) => r1 !== r2}); 
     this.state = {
       dataSource: ds.cloneWithRows(testData),
     };
   }
-
-  // componentDidMount() {
-  //   var listViewScrollView = this.refs.listView.getScrollResponder();
-  //   listViewScrollView.scrollTo({y: 1}); // Hack to get ListView to render fully
-  // }
 
   onPress() {
     alert("YO FROM RIGHT BUTTON");
@@ -73,7 +75,13 @@ class Main extends React.Component {
   }
 
   renderRow(rowData) {
-    return <Text>Hello World</Text>
+    return (
+      <View>
+        <Text>{rowData.company}</Text>
+        <Text>{rowData.position}</Text>
+        <Text>{rowData.date}</Text>
+      </View>
+    );
   }
   
   render() {
@@ -82,7 +90,7 @@ class Main extends React.Component {
         <ListView
           ref="listView"
           dataSource={this.state.dataSource}
-          renderRow={() => this.renderRow()}
+          renderRow={(data) => this.renderRow(data)}
         />
       </View>
     );
@@ -101,30 +109,13 @@ class AddJobAppView extends React.Component{
 
   constructor(props){
     super(props);
-    this.JobApp = t.struct({
-      company: t.String,
-      title: t.String,
-      webLink: t.String,
-      applicationDate: t.Date,
-      active: t.Boolean,
-      notes: t.String
-    });
-    this.options = {
-      fields: {
-        company: {
-          placeholder: 'Your Company Here'
-        },
-        title: {
-          placeholder: 'Job Title'
-        },
-        webLink: {
-          placeholder: 'Job Link'
-        },
-        notes: {
-          stylesheet: styles.notes
-        }
-      }
-    };
+    let jobSchema =  schema.JobApp;
+    let jobStruct = {};
+    for (let key in jobSchema.properties) {
+      jobStruct[key] = t[dbAndFormMap[jobSchema.properties[key]]];
+    }
+    this.JobApp = t.struct(jobStruct);
+    this.options = {};
   }
 
   onPress() {
@@ -132,6 +123,11 @@ class AddJobAppView extends React.Component{
     var value = this.refs.form.getValue();
     if (value) { // if validation fails, value will be null
       console.log(value); // value here is an instance of JobApp
+      realm.write(() => {
+        realm.create('JobApp', value);
+      });
+      // back to the list view after write. maybe should in success callback. todo
+      this.props.navigator.pop();
     }
   }
 
@@ -291,4 +287,3 @@ var styles = StyleSheet.create({
 */
 
 AppRegistry.registerComponent('jobmanager', () => jobmanager);
-
